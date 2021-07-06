@@ -2,6 +2,7 @@
   "name": "qiwi-cards-dashboard",
   "version": "0.1.0",
   "private": true,
+  "proxy": "https://edge.qiwi.com",
   "dependencies": {
     "@material-ui/core": "^4.11.4",
     "@material-ui/pickers": "^v4.0.0-alpha.12",
