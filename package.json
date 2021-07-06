@@ -2,8 +2,9 @@
   "name": "qiwi-cards-dashboard",
   "version": "0.1.0",
   "private": true,
-  "proxy": "https://edge.qiwi.com",
   "dependencies": {
+    "@material-ui/core": "^4.11.4",
+    "@material-ui/pickers": "^v4.0.0-alpha.12",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.10",
@@ -11,14 +12,23 @@
     "@types/node": "^12.0.0",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
+    "axios": "^0.21.1",
+    "date-fns": "^2.22.1",
+    "evergreen-ui": "^6.0.1",
+    "grommet": "^2.17.2",
+    "grommet-icons": "^4.5.0",
+    "query-string": "^7.0.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-scripts": "4.0.3",
+    "styled-components": "^5.3.0",
     "typescript": "^4.1.2",
+    "uuid": "^8.3.2",
     "web-vitals": "^1.0.1"
   },
   "scripts": {
     "start": "react-scripts start",
+    "prod": "pm2 start ecosystem.config.js",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -40,5 +50,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@types/lodash.merge": "^4.6.6",
+    "@types/uuid": "^8.3.0"
   }
 }
