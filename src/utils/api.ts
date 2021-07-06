@@ -29,7 +29,7 @@ type FetchParams = Omit<Partial<RequestInit>, "url" | "body"> & {
 export class QiwiApi {
   private static _token: string = "";
   private static _authInfo: AuthInfo | null = null;
-  private static proxy: boolean = false;
+  private static proxy: boolean = true;
   private static axios = axios.create({
     headers: {
       "Content-Type": "application/json",
