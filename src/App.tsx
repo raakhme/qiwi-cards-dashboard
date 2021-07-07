@@ -25,6 +25,7 @@ import DateFnsUtils from "@material-ui/pickers/adapter/date-fns";
 
 import "./App.css";
 import { QiwiApi } from "./utils/api";
+import { copyToClipboard } from "./utils/clipboard";
 import {
   Balance,
   BalanceCurrencies,
@@ -47,8 +48,9 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem("qiwi-token"));
   const [secrets, setSecrets] = useState<Record<string, CardSecrets>>({});
   const [loading, setLoading] = useState(false);
-  const [lastWeek, setLastWeek] =
-    useState<StatisticsPaymentResponse | null>(null);
+  const [lastWeek, setLastWeek] = useState<StatisticsPaymentResponse | null>(
+    null
+  );
   const [status, setStatus] = useState<CardStatus>("ACTIVE");
   const [balances, setBalances] = useState<Balance[]>([]);
 
@@ -73,7 +75,7 @@ function App() {
   }
 
   async function copyData(data: string) {
-    await navigator.clipboard.writeText(data);
+    await copyToClipboard(data);
     toaster.success("Данные были скопированы в буффер", {
       id: "success-clipboard",
     });
@@ -248,27 +250,23 @@ function App() {
                   </Table.TextCell>
                   <Table.TextCell
                     onClick={() =>
-                      getSecretPan(card) && copyData(getSecretPan(card) || "")
+                      getSecretPan(card) &&
+                      copyData(`
+                        ${getSecretPan(card)} ${
+                        card.qvx.cardExpireMonth
+                      }/${new Date(card.qvx.cardExpire)
+                        .getFullYear()
+                        .toString()
+                        .substr(-2)} ${getSecretCvv(card)}
+                      `)
                     }
                   >
                     {getSecretPan(card) || `********${card.qvx.maskedPan}`}
                   </Table.TextCell>
-                  <Table.TextCell
-                    onClick={() =>
-                      copyData(
-                        `${card.qvx.cardExpireMonth}/${card.qvx.cardExpireYear}`
-                      )
-                    }
-                  >
+                  <Table.TextCell>
                     {card.qvx.cardExpireMonth}/{card.qvx.cardExpireYear}
                   </Table.TextCell>
-                  <Table.TextCell
-                    onClick={() =>
-                      getSecretCvv(card) && copyData(getSecretCvv(card) || "")
-                    }
-                  >
-                    {getSecretCvv(card) || `***`}
-                  </Table.TextCell>
+                  <Table.TextCell>{getSecretCvv(card) || `***`}</Table.TextCell>
                   <Table.TextCell>
                     <Pane display="flex" justifyContent="flex-end">
                       <IconButton
