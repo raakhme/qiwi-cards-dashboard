@@ -131,7 +131,7 @@ function App() {
   const orderCard = useCallback(
     async (type: CreateOrderResponse["cardAlias"]) => {
       await QiwiApi.createOrder(type);
-      await init();
+      setTimeout(init, 300);
     },
     []
   );
