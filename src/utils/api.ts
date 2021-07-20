@@ -1,5 +1,5 @@
-import { qiwiApiHost, qiwiApiPath } from "../config/constants";
-import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
+import { qiwiApiPath } from "../config/constants";
+import axios, { AxiosRequestConfig } from "axios";
 import {
   BalancesResponse,
   CardSecrets,
@@ -10,8 +10,9 @@ import {
   QiwiCard,
 } from "../types";
 import { AuthInfo } from "../types/auth";
-import _merge from "lodash.merge";
+import _merge from "lodash/merge";
 import qs from "query-string";
+import _random from "lodash/random";
 
 import { v4 as uuid } from "uuid";
 
@@ -166,7 +167,6 @@ export class QiwiApi {
         "vas-alias": "qvc-master",
       },
     });
-    console.log(list);
     return list;
   }
 
@@ -229,7 +229,7 @@ export class QiwiApi {
     const { _authInfo } = QiwiApi;
 
     try {
-      const result: CreateOrderResponse = await this.fetch(
+      let order: any = await this.fetch(
         `/cards/v2/persons/${_authInfo?.authInfo.personId}/orders`,
         {
           body: JSON.stringify({ cardAlias }),
@@ -237,18 +237,18 @@ export class QiwiApi {
         }
       );
 
-      const confirmedOrder = await QiwiApi.confirmOrder(result);
-
-      if (!confirmedOrder.cardId) {
-        const payOrder = await QiwiApi.payOrder(confirmedOrder);
-        if (payOrder.id) {
-          toaster.success(
-            `Карта ${OrderPrice[cardAlias]}₽ успешно заказана и выпущена`
-          );
-          return payOrder;
-        }
+      if (order.status === "DRAFT") {
+        order = await QiwiApi.confirmOrder(order);
+      } else {
+        throw new Error();
       }
-      return confirmedOrder;
+
+      if (order.status === "PAYMENT_REQUIRED") {
+        toaster.success(`Карта была успешно выпущена`);
+        return await QiwiApi.payOrder(order);
+      } else {
+        throw new Error();
+      }
     } catch (err) {
       toaster.danger(
         `При выпуске карты ${OrderPrice[cardAlias]}₽ возникла ошибка`
@@ -275,7 +275,7 @@ export class QiwiApi {
       {
         method: "POST",
         body: JSON.stringify({
-          id: `${1000 * performance.now()}`,
+          id: `15661800${_random(10000, 99999)}`,
           sum: {
             amount: order.price.amount,
             currency: "643",
