@@ -55,6 +55,7 @@ export class QiwiApi {
 
   public static setToken(token: string) {
     QiwiApi._token = token;
+    localStorage.setItem("qiwi-token", token);
   }
 
   public static getHeaders(headers: Record<string, string>) {

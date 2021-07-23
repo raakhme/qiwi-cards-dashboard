@@ -56,15 +56,19 @@ function App() {
   const [balances, setBalances] = useState<Balance[]>([]);
 
   const init = useCallback(async () => {
-    setLoading(true);
-    await QiwiApi.profileInfo();
-    const cards = await QiwiApi.getCards();
-    const lastWeek = await QiwiApi.getStatisticsByLastWeek();
-    const balances = await QiwiApi.getBalances();
-    setBalances(balances.accounts);
-    setLastWeek(lastWeek);
-    setCards(cards);
-    setLoading(false);
+    try {
+      setLoading(true);
+      await QiwiApi.profileInfo();
+      const cards = await QiwiApi.getCards();
+      const lastWeek = await QiwiApi.getStatisticsByLastWeek();
+      const balances = await QiwiApi.getBalances();
+      setBalances(balances.accounts);
+      setLastWeek(lastWeek);
+      setCards(cards);
+      setLoading(false);
+    } catch (err) {
+      QiwiApi.setToken("");
+    }
   }, []);
 
   function renderCardStatus(status: QiwiCard["qvx"]["status"]) {
@@ -158,7 +162,6 @@ function App() {
             QiwiApi.setToken(result as string);
             await QiwiApi.profileInfo();
             setToken(result);
-            localStorage.setItem("qiwi-token", result);
             return;
           }
         } catch (err) {
@@ -166,6 +169,7 @@ function App() {
             "You entered an incorrect api token or have problems with the api"
           );
           QiwiApi.setToken("");
+          setToken("");
           await setTokenPrompt();
         }
       }
