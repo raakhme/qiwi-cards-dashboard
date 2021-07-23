@@ -18,6 +18,7 @@ import {
   UnlockIcon,
   HistoryIcon,
   Spinner,
+  RefreshIcon,
   SegmentedControl,
 } from "evergreen-ui";
 import { LocalizationProvider } from "@material-ui/pickers";
@@ -193,7 +194,10 @@ function App() {
           value={status}
           onChange={setStatus as any}
         />
-        <Pane>
+        <Pane display="flex" gap={16}>
+          <Button onClick={init}>
+            <RefreshIcon />
+          </Button>
           <Popover
             position={Position.BOTTOM_LEFT}
             content={
