@@ -239,9 +239,18 @@ function App() {
             <Table.TextHeaderCell>CVV</Table.TextHeaderCell>
             <Table.TextHeaderCell></Table.TextHeaderCell>
           </Table.Head>
-          <Table.Body maxHeight="calc(100vh - 300px)">
+          <Table.Body
+            minHeight="calc(100vh - 300px)"
+            maxHeight="calc(100vh - 300px)"
+          >
             {loading ? (
-              <Spinner marginX="auto" marginY={120} />
+              <Spinner
+                position="absolute"
+                left="50%"
+                right="50%"
+                top="50%"
+                transform="translateY(-50%)"
+              />
             ) : (
               filteredCards !== null &&
               filteredCards.map((card) => (
