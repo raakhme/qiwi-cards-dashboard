@@ -31,7 +31,8 @@ import { BalanceCurrenciesTrans } from "../../types/balance";
 import { StatisticsPaymentResponse } from "../../types/statistics";
 
 const periodOptions = [
-  { label: "День", value: "DAY" },
+  { label: "Вчера", value: "YESTERDAY" },
+  { label: "Сегодня", value: "DAY" },
   { label: "Месяц", value: "MONTH" },
   { label: "Все время (макс. 90 дней)", value: "ALL" },
   { label: "Другой период", value: "CUSTOM" },
@@ -54,9 +55,9 @@ const sourcesOptions = [
 
 export const PaymentsPage = () => {
   const [data, setData] = useState<PaymentTransactionData[]>([]);
-  const [period, setPeriod] = useState<"ALL" | "DAY" | "MONTH" | "CUSTOM">(
-    "MONTH"
-  );
+  const [period, setPeriod] = useState<
+    "ALL" | "YESTERDAY" | "DAY" | "MONTH" | "CUSTOM"
+  >("MONTH");
   const [nextTxnDate, setNextTxnDate] = useState<string | undefined>();
   const [nextTxnId, setNextTxnId] = useState<number | undefined>();
   const [incomingTotal, setIncomingTotal] = useState<
@@ -102,6 +103,11 @@ export const PaymentsPage = () => {
     if (period === "DAY") {
       const startDate = startOfDay(new Date());
       const endDate = endOfDay(new Date());
+      changeFilter("startDate", toUTCISODate(startDate));
+      changeFilter("endDate", toUTCISODate(endDate));
+    } else if (period === "YESTERDAY") {
+      const startDate = startOfDay(sub(new Date(), { days: 1 }));
+      const endDate = endOfDay(sub(new Date(), { days: 1 }));
       changeFilter("startDate", toUTCISODate(startDate));
       changeFilter("endDate", toUTCISODate(endDate));
     } else if (period === "MONTH") {
