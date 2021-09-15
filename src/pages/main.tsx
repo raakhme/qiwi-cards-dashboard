@@ -145,13 +145,8 @@ export function MainPage() {
   }, []);
 
   return (
-    <>
-      <Pane
-        marginTop={16}
-        marginX={16}
-        display="flex"
-        justifyContent="space-between"
-      >
+    <Pane backgroundColor="#f5f5f5" height="100vh">
+      <Pane padding={16} display="flex" justifyContent="space-between">
         <SegmentedControl
           options={CardFilterStatuses}
           value={status}
@@ -339,6 +334,6 @@ export function MainPage() {
           </Pane>
         )}
       </Pane>
-    </>
+    </Pane>
   );
 }

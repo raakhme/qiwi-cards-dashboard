@@ -70,7 +70,7 @@ export interface CardSecrets {
 export const CardFilterStatuses = [
   { label: "Активные", value: "ACTIVE" },
   { label: "Заблокированые", value: "BLOCKED" },
-  { label: "Отправлены в банк", value: "SENDED_TO_BANK" },
-  { label: "Отправлены в вам", value: "SENDED_TO_USER" },
-  { label: "Неизвестно", value: "UNKNOWN" },
+  // { label: "Отправлены в банк", value: "SENDED_TO_BANK" },
+  // { label: "Отправлены в вам", value: "SENDED_TO_USER" },
+  // { label: "Неизвестно", value: "UNKNOWN" },
 ];

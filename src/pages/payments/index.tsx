@@ -40,8 +40,8 @@ const periodOptions = [
 const operationOptions = [
   { label: "Все", value: "ALL" },
   { label: "Только пополнения", value: "IN" },
-  { label: "Только платежи", value: "OUT" },
-  { label: "Только по картам", value: "QIWI_CARD" },
+  { label: "Платежи и переводы в кошельке", value: "OUT" },
+  { label: "Платежи по карта QIWI", value: "QIWI_CARD" },
 ];
 
 const sourcesOptions = [
@@ -120,10 +120,10 @@ export const PaymentsPage = () => {
   const handleChangePeriod = useCallback(
     ([dateFrom, dateTo]: DateRange<Date>) => {
       if (dateFrom) {
-        changeFilter("startDate", toUTCISODate(dateFrom));
+        changeFilter("startDate", toUTCISODate(startOfDay(dateFrom)));
       }
       if (dateTo) {
-        changeFilter("endDate", toUTCISODate(dateTo));
+        changeFilter("endDate", toUTCISODate(endOfDay(dateTo)));
       }
     },
     []
@@ -185,7 +185,7 @@ export const PaymentsPage = () => {
   }
 
   return (
-    <Pane display="flex" position="relative">
+    <Pane display="flex" position="relative" backgroundColor="#f5f5f5">
       <Pane flexBasis="70%" margin={16}>
         <Pane
           marginBottom={16}
