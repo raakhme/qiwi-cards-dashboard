@@ -1,0 +1,12 @@
+.contentEditable {
+  padding: 8px 10px;
+  background: inherit;
+  outline: none;
+  border: 1px solid transparent;
+  transition: all 0.6s;
+  border-radius: 4px;
+}
+
+.contentEditable:focus {
+  border-color: #c1c4d6;
+}

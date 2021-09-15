@@ -1,5 +1,5 @@
 import { qiwiApiPath } from "../config/constants";
-import axios, { AxiosRequestConfig } from "axios";
+import { Singleton } from "@taipescripeto/singleton";
 import {
   BalancesResponse,
   CardSecrets,
@@ -20,6 +20,7 @@ import { toaster } from "evergreen-ui";
 import { toUTCISODate } from "./date";
 import { endOfDay, sub } from "date-fns";
 import { StatisticsPaymentResponse } from "../types/statistics";
+import { PaymentsFilters, PaymentTransactionData } from "../types/payments";
 
 type FetchParams = Omit<Partial<RequestInit>, "url" | "body"> & {
   body?: string;
@@ -27,19 +28,17 @@ type FetchParams = Omit<Partial<RequestInit>, "url" | "body"> & {
   query?: Record<string, any>;
 };
 
-export class QiwiApi {
-  private static _token: string = "";
-  private static _authInfo: AuthInfo | null = null;
-  private static proxy: boolean = true;
-  private static axios = axios.create({
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-  });
+@Singleton()
+export class QiwiApiClass {
+  private _authInfo: AuthInfo | null = null;
+  private proxy: boolean = true;
 
-  protected static path(path: string, query?: Record<string, any>) {
-    const basePath = QiwiApi.proxy ? window.location.origin : qiwiApiPath;
+  private get token() {
+    return localStorage.getItem("qiwi-token");
+  }
+
+  protected path(path: string, query?: Record<string, any>) {
+    const basePath = this.proxy ? window.location.origin : qiwiApiPath;
 
     return qs.stringifyUrl({
       url: `${basePath}${`/${
@@ -49,87 +48,34 @@ export class QiwiApi {
     });
   }
 
-  public static getAuthInfo() {
+  public getAuthInfo() {
     return this._authInfo;
   }
 
-  public static setToken(token: string) {
-    QiwiApi._token = token;
+  public setToken(token: string) {
     localStorage.setItem("qiwi-token", token);
   }
 
-  public static getHeaders(headers: Record<string, string>) {
+  public getHeaders(headers: Record<string, string>) {
     return new Headers(headers);
   }
 
-  static async axiosFetch(path: string, params?: AxiosRequestConfig) {
-    const defaultParams: AxiosRequestConfig = {
-      responseType: "json",
-      headers: {
-        Authorization: `Bearer ${QiwiApi._token}`,
-        origin: window.location.origin,
-      },
-    };
-    params = _merge(defaultParams, params);
-
-    const resp = await QiwiApi.axios({
-      ...params,
-      url: QiwiApi.path(path),
-    });
-
-    if (resp.status >= 200 && resp.status < 400) {
-      return resp.data;
-    } else {
-      try {
-        const { data: result } = await QiwiApi.axios({
-          ...params,
-          url: QiwiApi.path(path),
-          responseType: "json",
-        });
-        if (result.serviceName) {
-          toaster.danger(result.userMessage, { id: "qiwi-error" });
-        }
-        return null;
-      } catch (err) {
-        toaster.danger("Произошла внутренняя ошибка приложения", {
-          id: "internal-error",
-        });
-      }
-    }
-  }
-
-  static async fetch(path: string, params?: FetchParams) {
+  async fetch(path: string, params?: FetchParams) {
     const defaultParams: FetchParams = {
       type: "json",
-      // credentials: "include",
       mode: "cors",
-      // referrerPolicy: "origin-when-cross-origin",
     };
     params = _merge(defaultParams, params);
-    const resp = await fetch(QiwiApi.path(path, params.query), {
+    const resp = await fetch(this.path(path, params.query), {
       ...params,
       headers: {
         ...params.headers,
         "Content-Type": "application/json",
         Accept: "application/json",
-        Authorization: "Bearer " + QiwiApi._token,
-        // "accept-encoding": "gzip, deflate, br",
-        // "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
-        // "access-control-allow-credentials": "true",
-        // "access-control-request-headers":
-        //   "access-control-expose-headers,access-control-allow-origin,access-control-allow-headers,access-control-allow-credentials,access-control-allow-methods,authorization,content-type",
-        // "access-control-allow-methods":
-        //   "GET, PUT, POST, DELETE, HEAD, OPTIONS, PATCH, PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, LOCK",
-        // "access-control-allow-origin": window.location.origin,
+        Authorization: "Bearer " + this.token,
         Origin: window.location.origin,
-        // referer: window.location.href,
-        // "sec-ch-ua-mobile": "?0",
-        // "sec-fetch-dest": "empty",
-        // "sec-fetch-mode": "cors",
-        // "sec-fetch-site": "cross-site",
       },
     });
-    console.log(resp);
     if (resp.ok) {
       try {
         if (params?.type === "json") {
@@ -161,8 +107,8 @@ export class QiwiApi {
     }
   }
 
-  public static async getCards() {
-    const list: QiwiCard[] = await QiwiApi.fetch("/cards/v1/cards", {
+  public async getCards() {
+    const list: QiwiCard[] = await this.fetch("/cards/v1/cards", {
       method: "GET",
       query: {
         "vas-alias": "qvc-master",
@@ -171,19 +117,19 @@ export class QiwiApi {
     return list;
   }
 
-  public static async profileInfo() {
-    const info: AuthInfo = await QiwiApi.fetch(
+  public async profileInfo() {
+    const info: AuthInfo = await this.fetch(
       "/person-profile/v1/profile/current"
     );
-    QiwiApi._authInfo = info;
+    this._authInfo = info;
     return info;
   }
 
-  public static async blockCard(qiwiCard: QiwiCard) {
+  public async blockCard(qiwiCard: QiwiCard) {
     const { qvx } = qiwiCard;
-    const { _authInfo } = QiwiApi;
+    const { _authInfo } = this;
     try {
-      await QiwiApi.fetch(
+      await this.fetch(
         `/cards/v2/persons/${_authInfo?.authInfo.personId}/cards/${qvx.id}/block`,
         {
           method: "PUT",
@@ -197,11 +143,11 @@ export class QiwiApi {
     }
   }
 
-  public static async unblockCard(qiwiCard: QiwiCard) {
+  public async unblockCard(qiwiCard: QiwiCard) {
     const { qvx } = qiwiCard;
-    const { _authInfo } = QiwiApi;
+    const { _authInfo } = this;
     try {
-      await QiwiApi.fetch(
+      await this.fetch(
         `/cards/v2/persons/${_authInfo?.authInfo.personId}/cards/${qvx.id}/unblock`,
         {
           method: "PUT",
@@ -217,8 +163,8 @@ export class QiwiApi {
     }
   }
 
-  public static async fetchCardSecret(qiwiCard: QiwiCard) {
-    return (await QiwiApi.fetch(`/cards/v1/cards/${qiwiCard.qvx.id}/details`, {
+  public async fetchCardSecret(qiwiCard: QiwiCard) {
+    return (await this.fetch(`/cards/v1/cards/${qiwiCard.qvx.id}/details`, {
       method: "PUT",
       body: JSON.stringify({
         operationId: uuid(),
@@ -226,8 +172,8 @@ export class QiwiApi {
     })) as CardSecrets;
   }
 
-  public static async createOrder(cardAlias: QiwiCard["info"]["alias"]) {
-    const { _authInfo } = QiwiApi;
+  public async createOrder(cardAlias: QiwiCard["info"]["alias"]) {
+    const { _authInfo } = this;
 
     try {
       let order: any = await this.fetch(
@@ -239,14 +185,14 @@ export class QiwiApi {
       );
 
       if (order.status === "DRAFT") {
-        order = await QiwiApi.confirmOrder(order);
+        order = await this.confirmOrder(order);
       } else {
         throw new Error();
       }
 
       if (order.status === "PAYMENT_REQUIRED") {
         toaster.success(`Карта была успешно выпущена`);
-        return await QiwiApi.payOrder(order);
+        return await this.payOrder(order);
       } else {
         throw new Error();
       }
@@ -257,9 +203,9 @@ export class QiwiApi {
     }
   }
 
-  public static async confirmOrder(order: CreateOrderResponse) {
-    const { _authInfo } = QiwiApi;
-    const result: ConfirmedOrderResponse = await QiwiApi.fetch(
+  public async confirmOrder(order: CreateOrderResponse) {
+    const { _authInfo } = this;
+    const result: ConfirmedOrderResponse = await this.fetch(
       `/cards/v2/persons/${_authInfo?.authInfo.personId}/orders/${order.id}/submit`,
       {
         method: "PUT",
@@ -268,10 +214,10 @@ export class QiwiApi {
     return result;
   }
 
-  public static async payOrder(order: ConfirmedOrderResponse) {
-    const { _authInfo } = QiwiApi;
+  public async payOrder(order: ConfirmedOrderResponse) {
+    const { _authInfo } = this;
 
-    const result: PaymentInfo = await QiwiApi.fetch(
+    const result: PaymentInfo = await this.fetch(
       `/sinap/api/v2/terms/32064/payments`,
       {
         method: "POST",
@@ -296,9 +242,9 @@ export class QiwiApi {
     return result;
   }
 
-  public static async renameCard(qiwiCard: QiwiCard, alias: string) {
+  public async renameCard(qiwiCard: QiwiCard, alias: string) {
     try {
-      const result = await QiwiApi.fetch(
+      const result = await this.fetch(
         `/cards/v1/cards/${qiwiCard.qvx.id}/alias`,
         {
           body: JSON.stringify({
@@ -327,14 +273,14 @@ export class QiwiApi {
     }
   }
 
-  public static async paymentHistory(
+  public async paymentHistory(
     qiwiCard: QiwiCard,
     dateFrom: Date,
     dateTo: Date
   ) {
-    const { _authInfo } = QiwiApi;
+    const { _authInfo } = this;
     const { qvx } = qiwiCard;
-    const result = await QiwiApi.fetch(
+    const result = await this.fetch(
       `/payment-history/v1/persons/${_authInfo?.authInfo.personId}/cards/${qvx.id}/statement`,
       {
         type: "blob",
@@ -354,17 +300,47 @@ export class QiwiApi {
     }
   }
 
-  public static async getBalances() {
-    const { _authInfo } = QiwiApi;
-    const result: BalancesResponse = await QiwiApi.fetch(
+  public async payments(filters: PaymentsFilters) {
+    const { _authInfo } = this;
+    return (await this.fetch(
+      `/payment-history/v2/persons/${_authInfo?.authInfo.personId}/payments`,
+      { query: filters }
+    )) as {
+      data: PaymentTransactionData[];
+      nextTxnId: number;
+      nextTxnDate: string;
+    };
+  }
+
+  public async paymentStats(
+    filters: Pick<
+      PaymentsFilters,
+      "sources" | "operation" | "startDate" | "endDate"
+    >
+  ) {
+    const { _authInfo } = this;
+    const result = await this.fetch(
+      `/payment-history/v2/persons/${_authInfo?.authInfo.personId}/payments/total`,
+      {
+        method: "GET",
+        type: "json",
+        query: filters,
+      }
+    );
+    return result as StatisticsPaymentResponse;
+  }
+
+  public async getBalances() {
+    const { _authInfo } = this;
+    const result: BalancesResponse = await this.fetch(
       `/funding-sources/v2/persons/${_authInfo?.authInfo.personId}/accounts`
     );
     return result;
   }
 
-  public static async getStatistics(dateFrom: Date, dateTo: Date) {
-    const { _authInfo } = QiwiApi;
-    const result = await QiwiApi.fetch(
+  public async getStatistics(dateFrom: Date, dateTo: Date) {
+    const { _authInfo } = this;
+    const result = await this.fetch(
       `/payment-history/v2/persons/${_authInfo?.authInfo.personId}/payments/total`,
       {
         method: "GET",
@@ -375,17 +351,28 @@ export class QiwiApi {
         },
       }
     );
-    console.log(result);
     return result;
   }
 
-  public static async getStatisticsByLastWeek() {
+  public async getStatisticsByLastWeek() {
     const dateFrom = endOfDay(sub(new Date(), { days: 7 }));
     const dateTo = new Date();
-    const result: StatisticsPaymentResponse = await QiwiApi.getStatistics(
+    const result: StatisticsPaymentResponse = await this.getStatistics(
       dateFrom,
       dateTo
     );
     return result;
+  }
+}
+
+export const QiwiApi = new QiwiApiClass();
+
+export async function initApi() {
+  try {
+    if (!QiwiApi["_authInfo"]) {
+      await QiwiApi.profileInfo();
+    }
+  } catch (err) {
+    QiwiApi.setToken("");
   }
 }
