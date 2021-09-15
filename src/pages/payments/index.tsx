@@ -31,8 +31,8 @@ import { BalanceCurrenciesTrans } from "../../types/balance";
 import { StatisticsPaymentResponse } from "../../types/statistics";
 
 const periodOptions = [
-  { label: "Вчера", value: "YESTERDAY" },
   { label: "Сегодня", value: "DAY" },
+  { label: "Вчера", value: "YESTERDAY" },
   { label: "Месяц", value: "MONTH" },
   { label: "Все время (макс. 90 дней)", value: "ALL" },
   { label: "Другой период", value: "CUSTOM" },
