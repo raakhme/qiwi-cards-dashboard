@@ -38,6 +38,16 @@ export const App = () => {
           setToken("");
           await setTokenPrompt();
         }
+      } else {
+        try {
+          QiwiApi.setToken(token);
+          await QiwiApi.profileInfo();
+          setToken(token);
+        } catch (err) {
+          QiwiApi.setToken("");
+          setToken("");
+          await setTokenPrompt();
+        }
       }
     }
 

@@ -102,7 +102,7 @@ export class QiwiApiClass {
         toaster.danger("Произошла внутренняя ошибка приложения", {
           id: "internal-error",
         });
-        // throw err;
+        throw err;
       }
     }
   }
