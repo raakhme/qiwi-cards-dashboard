@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useContext, useMemo } from "react";
 
 import {
   Pane,
@@ -25,10 +25,11 @@ import sub from "date-fns/sub";
 import startOfDay from "date-fns/startOfDay";
 import endOfDay from "date-fns/endOfDay";
 import { format, toUTCISODate } from "../../utils/date";
-import { initApi, QiwiApi } from "../../utils/api";
 import _groupBy from "lodash/groupBy";
 import { BalanceCurrenciesTrans } from "../../types/balance";
 import { StatisticsPaymentResponse } from "../../types/statistics";
+import { PagesContext } from "../../context/page";
+import { withAuth } from "../../decorators/withAuth";
 
 const periodOptions = [
   { label: "Сегодня", value: "DAY" },
@@ -53,7 +54,9 @@ const sourcesOptions = [
   { label: "Баланс телефона", value: "MK" },
 ];
 
-export const PaymentsPage = () => {
+export const PaymentsPage = withAuth()(() => {
+  const { api } = useContext(PagesContext);
+
   const [data, setData] = useState<PaymentTransactionData[]>([]);
   const [period, setPeriod] = useState<
     "ALL" | "YESTERDAY" | "DAY" | "MONTH" | "CUSTOM"
@@ -136,8 +139,7 @@ export const PaymentsPage = () => {
   );
 
   const loadMore = async () => {
-    await initApi();
-    const response = await QiwiApi.payments({
+    const response = await api.payments({
       ...filters,
       nextTxnDate,
       nextTxnId,
@@ -149,8 +151,7 @@ export const PaymentsPage = () => {
 
   const fetchPayments = async (filters: PaymentsFilters) => {
     setLoading(true);
-    await initApi();
-    const response = await QiwiApi.payments({
+    const response = await api.payments({
       ...filters,
     });
     setData(response.data);
@@ -160,10 +161,7 @@ export const PaymentsPage = () => {
   };
 
   const fetchStats = async (filters: PaymentsFilters) => {
-    await initApi();
-    const { incomingTotal, outgoingTotal } = await QiwiApi.paymentStats(
-      filters
-    );
+    const { incomingTotal, outgoingTotal } = await api.paymentStats(filters);
     setIncomingTotal(incomingTotal);
     setOutgoingTotal(outgoingTotal);
   };
@@ -373,4 +371,4 @@ export const PaymentsPage = () => {
       </Pane>
     </Pane>
   );
-};
+});

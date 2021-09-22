@@ -1,76 +1,26 @@
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
-import { MainPage } from "./pages/main";
-import { PaymentsPage } from "./pages/payments";
-
 import { LocalizationProvider } from "@material-ui/pickers";
 import DateFnsUtils from "@material-ui/pickers/adapter/date-fns";
-import { useState, useEffect } from "react";
-import { initApi, QiwiApi } from "./utils/api";
+
+import pages from "./pages";
+import React from "react";
+import { PagesContextProvider } from "./context/page";
 
 export const App = () => {
-  const [token, setToken] = useState(localStorage.getItem("qiwi-token"));
-
-  useEffect(() => {
-    async function setTokenPrompt() {
-      if (!token || token === "") {
-        const result = prompt("Enter Qiwi API Token", "");
-        if (result === null) {
-          alert("You must enter api token");
-          await setTokenPrompt();
-        }
-        if (result === "") {
-          alert("You entered empty api token");
-          await setTokenPrompt();
-        }
-        try {
-          if (result && result !== "") {
-            QiwiApi.setToken(result as string);
-            await QiwiApi.profileInfo();
-            setToken(result);
-            return;
-          }
-        } catch (err) {
-          alert(
-            "You entered an incorrect api token or have problems with the api"
-          );
-          QiwiApi.setToken("");
-          setToken("");
-          await setTokenPrompt();
-        }
-      } else {
-        try {
-          QiwiApi.setToken(token);
-          await QiwiApi.profileInfo();
-          setToken(token);
-        } catch (err) {
-          QiwiApi.setToken("");
-          setToken("");
-          await setTokenPrompt();
-        }
-      }
-    }
-
-    setTokenPrompt();
-
-    if (token) {
-      QiwiApi.setToken(token);
-      initApi();
-    }
-  }, [token]);
-
-  return token ? (
+  return (
     <LocalizationProvider dateAdapter={DateFnsUtils}>
       <Router>
-        <Switch>
-          <Route path="/payments">
-            <PaymentsPage />
-          </Route>
-          <Route path="/">
-            <MainPage />
-          </Route>
-        </Switch>
+        <PagesContextProvider>
+          <Switch>
+            {Object.keys(pages).map((page) => (
+              <Route path={page === "/" ? page : `/${page}`}>
+                {React.createElement(pages[page])}
+              </Route>
+            ))}
+          </Switch>
+        </PagesContextProvider>
       </Router>
     </LocalizationProvider>
-  ) : null;
+  );
 };

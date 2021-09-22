@@ -1,12 +1,12 @@
-import { Button, Dialog, HistoryIcon, Popover, TextInput } from "evergreen-ui";
-import React, { useCallback, useEffect, useState, useMemo } from "react";
+import { Button, Dialog, HistoryIcon, Popover } from "evergreen-ui";
+import React, { useCallback, useState, useMemo, useContext } from "react";
 import { QiwiCard } from "../../types";
-import { QiwiApi } from "../../utils/api";
 import { StaticDateRangePicker, DateRange } from "@material-ui/pickers";
 
 import add from "date-fns/add";
 import startOfDay from "date-fns/startOfDay";
 import format from "date-fns/format";
+import { PagesContext } from "../../context/page";
 
 export interface ShowCardHistoryModalProps {
   qiwiCard: QiwiCard;
@@ -17,6 +17,7 @@ export const ShowCardHistoryModal = ({
   children,
   qiwiCard,
 }: ShowCardHistoryModalProps) => {
+  const { api } = useContext(PagesContext);
   const [show, setShow] = useState(false);
   const [dateFrom, setDateFrom] = useState<Date>(
     startOfDay(add(new Date(), { days: -7 }))
@@ -36,8 +37,8 @@ export const ShowCardHistoryModal = ({
   );
 
   const handleSubmit = useCallback(async () => {
-    await QiwiApi.paymentHistory(qiwiCard, dateFrom, dateTo);
-  }, [dateTo, dateFrom, qiwiCard]);
+    await api.paymentHistory(qiwiCard, dateFrom, dateTo);
+  }, [dateTo, api, dateFrom, qiwiCard]);
 
   return (
     <>

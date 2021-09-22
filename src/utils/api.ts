@@ -1,5 +1,4 @@
 import { qiwiApiPath } from "../config/constants";
-import { Singleton } from "@taipescripeto/singleton";
 import {
   BalancesResponse,
   CardSecrets,
@@ -28,14 +27,14 @@ type FetchParams = Omit<Partial<RequestInit>, "url" | "body"> & {
   query?: Record<string, any>;
 };
 
-@Singleton()
 export class QiwiApiClass {
   private _authInfo: AuthInfo | null = null;
   private proxy: boolean = true;
 
-  private get token() {
-    return localStorage.getItem("qiwi-token");
-  }
+  private token: string = localStorage.getItem("qiwi-token") || "";
+  private personId: string = localStorage.getItem("qiwi-personId") || "";
+
+  constructor() {}
 
   protected path(path: string, query?: Record<string, any>) {
     const basePath = this.proxy ? window.location.origin : qiwiApiPath;
@@ -48,12 +47,28 @@ export class QiwiApiClass {
     });
   }
 
+  public clearAuth() {
+    this.setToken("");
+    this.setPersonId("");
+    this.setAuthInfo(null);
+  }
+
+  public setAuthInfo(authInfo: AuthInfo | null) {
+    this._authInfo = authInfo;
+  }
+
   public getAuthInfo() {
     return this._authInfo;
   }
 
   public setToken(token: string) {
+    this.token = token;
     localStorage.setItem("qiwi-token", token);
+  }
+
+  public setPersonId(personId: string) {
+    this.personId = personId;
+    localStorage.setItem("qiwi-personId", personId);
   }
 
   public getHeaders(headers: Record<string, string>) {
@@ -69,11 +84,11 @@ export class QiwiApiClass {
     const resp = await fetch(this.path(path, params.query), {
       ...params,
       headers: {
-        ...params.headers,
         "Content-Type": "application/json",
         Accept: "application/json",
         Authorization: "Bearer " + this.token,
         Origin: window.location.origin,
+        ...params.headers,
       },
     });
     if (resp.ok) {
@@ -99,9 +114,6 @@ export class QiwiApiClass {
         }
         return null;
       } catch (err) {
-        toaster.danger("Произошла внутренняя ошибка приложения", {
-          id: "internal-error",
-        });
         throw err;
       }
     }
@@ -117,13 +129,34 @@ export class QiwiApiClass {
     return list;
   }
 
-  public async profileInfo() {
-    const info: AuthInfo = await this.fetch(
-      "/person-profile/v1/profile/current"
-    );
-    this._authInfo = info;
-    return info;
+  public async checkToken(token: string): Promise<AuthInfo | false> {
+    try {
+      const info: AuthInfo = await this.fetch(
+        "/person-profile/v1/profile/current",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return info;
+    } catch (err) {
+      return false;
+    }
   }
+
+  // public async auth(token: string) {
+  //   const info: AuthInfo = await this.fetch(
+  //     "/person-profile/v1/profile/current",
+  //     {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //     }
+  //   );
+  //   this._authInfo = info;
+  //   return info;
+  // }
 
   public async blockCard(qiwiCard: QiwiCard) {
     const { qvx } = qiwiCard;
@@ -301,9 +334,8 @@ export class QiwiApiClass {
   }
 
   public async payments(filters: PaymentsFilters) {
-    const { _authInfo } = this;
     return (await this.fetch(
-      `/payment-history/v2/persons/${_authInfo?.authInfo.personId}/payments`,
+      `/payment-history/v2/persons/${this.personId}/payments`,
       { query: filters }
     )) as {
       data: PaymentTransactionData[];
@@ -320,7 +352,7 @@ export class QiwiApiClass {
   ) {
     const { _authInfo } = this;
     const result = await this.fetch(
-      `/payment-history/v2/persons/${_authInfo?.authInfo.personId}/payments/total`,
+      `/payment-history/v2/persons/${this.personId}/payments/total`,
       {
         method: "GET",
         type: "json",
@@ -331,17 +363,15 @@ export class QiwiApiClass {
   }
 
   public async getBalances() {
-    const { _authInfo } = this;
     const result: BalancesResponse = await this.fetch(
-      `/funding-sources/v2/persons/${_authInfo?.authInfo.personId}/accounts`
+      `/funding-sources/v2/persons/${this.personId}/accounts`
     );
     return result;
   }
 
   public async getStatistics(dateFrom: Date, dateTo: Date) {
-    const { _authInfo } = this;
     const result = await this.fetch(
-      `/payment-history/v2/persons/${_authInfo?.authInfo.personId}/payments/total`,
+      `/payment-history/v2/persons/${this.personId}/payments/total`,
       {
         method: "GET",
         type: "json",
@@ -362,17 +392,5 @@ export class QiwiApiClass {
       dateTo
     );
     return result;
-  }
-}
-
-export const QiwiApi = new QiwiApiClass();
-
-export async function initApi() {
-  try {
-    if (!QiwiApi["_authInfo"]) {
-      await QiwiApi.profileInfo();
-    }
-  } catch (err) {
-    QiwiApi.setToken("");
   }
 }

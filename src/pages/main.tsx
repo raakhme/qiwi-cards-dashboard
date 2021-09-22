@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
   Table,
   Button,
@@ -21,7 +21,6 @@ import {
   SegmentedControl,
 } from "evergreen-ui";
 
-import { initApi, QiwiApi } from "../utils/api";
 import { copyToClipboard } from "../utils/clipboard";
 import {
   Balance,
@@ -39,8 +38,12 @@ import {
 } from "../types";
 import { ShowCardHistoryModal, RenameField, Link } from "../components";
 import { StatisticsPaymentResponse } from "../types/statistics";
+import { PagesContext } from "../context/page";
+import { withAuth } from "../decorators/withAuth";
 
-export function MainPage() {
+export const MainPage = withAuth()(() => {
+  const { api } = useContext(PagesContext);
+
   const [cards, setCards] = useState<QiwiCard[]>([]);
   const [secrets, setSecrets] = useState<Record<string, CardSecrets>>({});
   const [loading, setLoading] = useState(false);
@@ -52,15 +55,14 @@ export function MainPage() {
 
   const init = useCallback(async () => {
     setLoading(true);
-    await initApi();
-    const cards = await QiwiApi.getCards();
-    const lastWeek = await QiwiApi.getStatisticsByLastWeek();
-    const balances = await QiwiApi.getBalances();
+    const cards = await api.getCards();
+    const lastWeek = await api.getStatisticsByLastWeek();
+    const balances = await api.getBalances();
     setBalances(balances.accounts);
     setLastWeek(lastWeek);
     setCards(cards);
     setLoading(false);
-  }, []);
+  }, [api]);
 
   function renderCardStatus(status: QiwiCard["qvx"]["status"]) {
     return (
@@ -84,12 +86,12 @@ export function MainPage() {
   }, [balances]);
 
   async function blockCard(qiwiCard: QiwiCard) {
-    await QiwiApi.blockCard(qiwiCard);
+    await api.blockCard(qiwiCard);
     setTimeout(init, 300);
   }
 
   async function unblockCard(qiwiCard: QiwiCard) {
-    await QiwiApi.unblockCard(qiwiCard);
+    await api.unblockCard(qiwiCard);
     setTimeout(init, 300);
   }
 
@@ -115,21 +117,24 @@ export function MainPage() {
     [secrets]
   );
 
-  const showSecrets = useCallback(async (qiwiCard: QiwiCard) => {
-    const { qvx } = qiwiCard;
-    const secret = await QiwiApi.fetchCardSecret(qiwiCard);
-    setSecrets((secrets) => ({
-      ...secrets,
-      [qvx.id]: secret,
-    }));
-  }, []);
+  const showSecrets = useCallback(
+    async (qiwiCard: QiwiCard) => {
+      const { qvx } = qiwiCard;
+      const secret = await api.fetchCardSecret(qiwiCard);
+      setSecrets((secrets) => ({
+        ...secrets,
+        [qvx.id]: secret,
+      }));
+    },
+    [api]
+  );
 
   const orderCard = useCallback(
     async (type: CreateOrderResponse["cardAlias"]) => {
-      await QiwiApi.createOrder(type);
+      await api.createOrder(type);
       setTimeout(init, 300);
     },
-    []
+    [api, init]
   );
 
   const filteredCards = useMemo(() => {
@@ -137,12 +142,12 @@ export function MainPage() {
   }, [status, cards]);
 
   const handleRename = (qiwiCard: QiwiCard) => async (value: string) => {
-    await QiwiApi.renameCard(qiwiCard, value);
+    await api.renameCard(qiwiCard, value);
   };
 
   useEffect(() => {
     init();
-  }, []);
+  }, [init]);
 
   return (
     <Pane backgroundColor="#f5f5f5" height="100vh">
@@ -336,4 +341,4 @@ export function MainPage() {
       </Pane>
     </Pane>
   );
-}
+});
