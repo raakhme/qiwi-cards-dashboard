@@ -3,7 +3,8 @@ module.exports = {
     {
       name: "app",
       script: "npm run start",
-      instances: 1,
+      instances: 2,
+      cron_restart: "0 0 * * *",
       autorestart: true,
     },
   ],
