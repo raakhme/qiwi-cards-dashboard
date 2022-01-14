@@ -16,6 +16,8 @@ export function withAuth(
     function SecuredComponent(props: P) {
       const { isAuth, tokenChecked } = useContext(PagesContext);
 
+      console.log({ isAuth, tokenChecked });
+
       return isAuth && tokenChecked ? <WrappedComponent {...props} /> : null;
     }
     SecuredComponent.displayName = `Secured(${

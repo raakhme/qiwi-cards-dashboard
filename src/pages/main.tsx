@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   Table,
   Button,
@@ -18,10 +18,13 @@ import {
   HistoryIcon,
   Spinner,
   RefreshIcon,
+  Text,
+  Heading,
+  Tooltip,
   SegmentedControl,
-} from "evergreen-ui";
+} from 'evergreen-ui';
 
-import { copyToClipboard } from "../utils/clipboard";
+import { copyToClipboard } from '../utils/clipboard';
 import {
   Balance,
   BalanceCurrencies,
@@ -35,14 +38,21 @@ import {
   OrderPrice,
   OrderPriceTranslate,
   QiwiCard,
-} from "../types";
-import { ShowCardHistoryModal, RenameField, Link } from "../components";
-import { StatisticsPaymentResponse } from "../types/statistics";
-import { PagesContext } from "../context/page";
-import { withAuth } from "../decorators/withAuth";
+} from '../types';
+import {
+  ShowCardHistoryModal,
+  RenameField,
+  Link,
+  ThemeIcon,
+} from '../components';
+import { StatisticsPaymentResponse } from '../types/statistics';
+import { PagesContext } from '../context/page';
+import { withAuth } from '../decorators/withAuth';
+import { useThemeContext } from '../themes/provider';
 
 export const MainPage = withAuth()(() => {
   const { api } = useContext(PagesContext);
+  const { theme, setTheme } = useThemeContext();
 
   const [cards, setCards] = useState<QiwiCard[]>([]);
   const [secrets, setSecrets] = useState<Record<string, CardSecrets>>({});
@@ -50,7 +60,7 @@ export const MainPage = withAuth()(() => {
   const [lastWeek, setLastWeek] = useState<StatisticsPaymentResponse | null>(
     null
   );
-  const [status, setStatus] = useState<CardStatus>("ACTIVE");
+  const [status, setStatus] = useState<CardStatus>('ACTIVE');
   const [balances, setBalances] = useState<Balance[]>([]);
 
   const init = useCallback(async () => {
@@ -64,7 +74,7 @@ export const MainPage = withAuth()(() => {
     setLoading(false);
   }, [api]);
 
-  function renderCardStatus(status: QiwiCard["qvx"]["status"]) {
+  function renderCardStatus(status: QiwiCard['qvx']['status']) {
     return (
       <Badge color={CardStatusColors[status] as any}>
         {CardStatusTranslates[status]}
@@ -74,8 +84,8 @@ export const MainPage = withAuth()(() => {
 
   async function copyData(data: string) {
     await copyToClipboard(data.trim());
-    toaster.success("Данные были скопированы в буффер", {
-      id: "success-clipboard",
+    toaster.success('Данные были скопированы в буффер', {
+      id: 'success-clipboard',
     });
   }
 
@@ -130,7 +140,7 @@ export const MainPage = withAuth()(() => {
   );
 
   const orderCard = useCallback(
-    async (type: CreateOrderResponse["cardAlias"]) => {
+    async (type: CreateOrderResponse['cardAlias']) => {
       await api.createOrder(type);
       setTimeout(init, 300);
     },
@@ -149,8 +159,14 @@ export const MainPage = withAuth()(() => {
     init();
   }, [init]);
 
+  const toggleTheme = useCallback(() => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  }, [theme]);
+
+  const isLight = theme === 'light';
+
   return (
-    <Pane backgroundColor="#f5f5f5" height="100vh">
+    <Pane backgroundColor={isLight ? '#f5f5f5' : '#1B1E1E'} height="100vh">
       <Pane padding={16} display="flex" justifyContent="space-between">
         <SegmentedControl
           options={CardFilterStatuses}
@@ -158,6 +174,11 @@ export const MainPage = withAuth()(() => {
           onChange={setStatus as any}
         />
         <Pane display="flex" gap={16}>
+          <Tooltip content={isLight ? 'Темная тема' : 'Светлая тема'}>
+            <Button appearance="minimal" onClick={toggleTheme}>
+              <ThemeIcon />
+            </Button>
+          </Tooltip>
           <Button appearance="minimal" onClick={init}>
             <RefreshIcon />
           </Button>
@@ -168,20 +189,20 @@ export const MainPage = withAuth()(() => {
             position={Position.BOTTOM_LEFT}
             content={
               <Menu>
-                <Menu.Group>
+                <Menu.Group background={isLight ? 'white' : '#1B1E1E'}>
                   <Menu.Item
                     icon={CreditCardIcon}
-                    onClick={() => orderCard("qvc-cpa")}
+                    onClick={() => orderCard('qvc-cpa')}
                   >
-                    {OrderPriceTranslate["qvc-cpa"]} ({OrderPrice["qvc-cpa"]}₽)
+                    {OrderPriceTranslate['qvc-cpa']} ({OrderPrice['qvc-cpa']}₽)
                   </Menu.Item>
                   <Menu.Divider />
                   <Menu.Item
                     icon={CreditCardIcon}
-                    onClick={() => orderCard("qvc-cpa-debit")}
+                    onClick={() => orderCard('qvc-cpa-debit')}
                   >
-                    {OrderPriceTranslate["qvc-cpa-debit"]} (
-                    {OrderPrice["qvc-cpa-debit"]}₽)
+                    {OrderPriceTranslate['qvc-cpa-debit']} (
+                    {OrderPrice['qvc-cpa-debit']}₽)
                   </Menu.Item>
                 </Menu.Group>
               </Menu>
@@ -251,11 +272,13 @@ export const MainPage = withAuth()(() => {
                   <Table.TextCell>{getSecretCvv(card) || `***`}</Table.TextCell>
                   <Table.TextCell>
                     <Pane display="flex" justifyContent="flex-end">
-                      <IconButton
-                        icon={EyeOpenIcon}
-                        onClick={() => showSecrets(card)}
-                        marginRight={8}
-                      ></IconButton>
+                      {status !== 'BLOCKED' && (
+                        <IconButton
+                          icon={EyeOpenIcon}
+                          onClick={() => showSecrets(card)}
+                          marginRight={8}
+                        ></IconButton>
+                      )}
                       <ShowCardHistoryModal qiwiCard={card}>
                         {(showCardHistory) => (
                           <Popover
@@ -271,24 +294,24 @@ export const MainPage = withAuth()(() => {
                                   </Menu.Item>
                                   <Menu.Item
                                     icon={
-                                      card.qvx.status === "ACTIVE"
+                                      card.qvx.status === 'ACTIVE'
                                         ? LockIcon
                                         : UnlockIcon
                                     }
                                     onClick={async () =>
-                                      card.qvx.status === "ACTIVE"
+                                      card.qvx.status === 'ACTIVE'
                                         ? await blockCard(card)
                                         : await unblockCard(card)
                                     }
                                     intent={
-                                      card.qvx.status === "ACTIVE"
-                                        ? "danger"
-                                        : "success"
+                                      card.qvx.status === 'ACTIVE'
+                                        ? 'danger'
+                                        : 'success'
                                     }
                                   >
-                                    {card.qvx.status === "ACTIVE"
-                                      ? "Заблокировать"
-                                      : "Разблокировать"}
+                                    {card.qvx.status === 'ACTIVE'
+                                      ? 'Заблокировать'
+                                      : 'Разблокировать'}
                                   </Menu.Item>
                                 </Menu.Group>
                               </Menu>
@@ -306,33 +329,47 @@ export const MainPage = withAuth()(() => {
           </Table.Body>
         </Table>
         {lastWeek && (
-          <Pane>
-            <h3>Статистика</h3>
+          <Pane marginY="16px">
+            <Heading is="h3" marginBottom="32px">
+              Статистика
+            </Heading>
             <Pane display="flex" gap="16px">
               <Pane>
-                <h4>Текущий баланс</h4>
-                {balance && balance.hasBalance
-                  ? `${balance.balance?.amount} ${
-                      BalanceCurrenciesTrans[BalanceCurrencies.rub]
-                    }`
-                  : `0 ${BalanceCurrenciesTrans[BalanceCurrencies.rub]}`}
+                <Heading is="h4" marginBottom="8px">
+                  Текущий баланс
+                </Heading>
+                <Text>
+                  {balance && balance.hasBalance
+                    ? `${balance.balance?.amount} ${
+                        BalanceCurrenciesTrans[BalanceCurrencies.rub]
+                      }`
+                    : `0 ${BalanceCurrenciesTrans[BalanceCurrencies.rub]}`}
+                </Text>
               </Pane>
               <Pane>
-                <h4>Поступления за неделю</h4>
-                {lastWeek?.incomingTotal.map(
-                  (v) => `
-              ${v.amount} ${BalanceCurrenciesTrans[v.currency]}
-            `
-                )}
-              </Pane>
-              <Pane>
-                <Pane>
-                  <h4>Расходы за неделю</h4>
-                  {lastWeek?.outgoingTotal.map(
+                <Heading is="h4" marginBottom="8px">
+                  Поступления за неделю
+                </Heading>
+                <Text>
+                  {lastWeek?.incomingTotal.map(
                     (v) => `
               ${v.amount} ${BalanceCurrenciesTrans[v.currency]}
             `
                   )}
+                </Text>
+              </Pane>
+              <Pane>
+                <Pane>
+                  <Heading is="h4" marginBottom="8px">
+                    Расходы за неделю
+                  </Heading>
+                  <Text>
+                    {lastWeek?.outgoingTotal.map(
+                      (v) => `
+              ${v.amount} ${BalanceCurrenciesTrans[v.currency]}
+            `
+                    )}
+                  </Text>
                 </Pane>
               </Pane>
             </Pane>

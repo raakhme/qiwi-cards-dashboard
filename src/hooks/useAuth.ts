@@ -12,7 +12,7 @@ export const useAuth = () => {
   const [token, setToken] = useState(
     localStorage.getItem(QIWI_TOKEN_KEY) || ""
   );
-  const [redirectUrl, setRedirectUrl] = useState("/");
+  const [redirectUrl, setRedirectUrl] = useState(history.location.pathname);
   const [tokenChecked, setTokenChecked] = useState(false);
   const [personId, setPersonId] = useState(
     localStorage.getItem(QIWI_PERSON_ID_KEY) || ""
@@ -21,7 +21,6 @@ export const useAuth = () => {
   const [api, setApi] = useState<QiwiApiClass>(new QiwiApiClass());
 
   const checkToken = async (token: string) => {
-    console.log(redirectUrl);
     if (token && token !== "") {
       const result = await api.checkToken(token);
       if (result) {

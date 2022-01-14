@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from "react";
+import React, { useContext, useMemo } from 'react';
 
 import {
   Pane,
@@ -8,73 +8,77 @@ import {
   Spinner,
   Button,
   ArrowLeftIcon,
-} from "evergreen-ui";
-import { useCallback, useEffect, useState } from "react";
+  Heading,
+  Text,
+} from 'evergreen-ui';
+import { useCallback, useEffect, useState } from 'react';
 import {
   PaymentsFilters,
   PaymentStatusColors,
   PaymentStatusTranslates,
   PaymentTransactionData,
   PaymentTypeTranslates,
-} from "../../types/payments";
-import { StaticDateRangePicker, DateRange } from "@material-ui/pickers";
-import InfiniteScroll from "react-infinite-scroller";
-import { Link } from "../../components";
+} from '../../types/payments';
+import { StaticDateRangePicker, DateRange } from '@material-ui/pickers';
+import InfiniteScroll from 'react-infinite-scroller';
+import { Link } from '../../components';
 
-import sub from "date-fns/sub";
-import startOfDay from "date-fns/startOfDay";
-import endOfDay from "date-fns/endOfDay";
-import { format, toUTCISODate } from "../../utils/date";
-import _groupBy from "lodash/groupBy";
-import { BalanceCurrenciesTrans } from "../../types/balance";
-import { StatisticsPaymentResponse } from "../../types/statistics";
-import { PagesContext } from "../../context/page";
-import { withAuth } from "../../decorators/withAuth";
+import sub from 'date-fns/sub';
+import startOfDay from 'date-fns/startOfDay';
+import endOfDay from 'date-fns/endOfDay';
+import { format, toUTCISODate } from '../../utils/date';
+import _groupBy from 'lodash/groupBy';
+import { BalanceCurrenciesTrans } from '../../types/balance';
+import { StatisticsPaymentResponse } from '../../types/statistics';
+import { PagesContext } from '../../context/page';
+import { withAuth } from '../../decorators/withAuth';
+import { useThemeContext } from '../../themes/provider';
 
 const periodOptions = [
-  { label: "Сегодня", value: "DAY" },
-  { label: "Вчера", value: "YESTERDAY" },
-  { label: "Месяц", value: "MONTH" },
-  { label: "Все время (макс. 90 дней)", value: "ALL" },
-  { label: "Другой период", value: "CUSTOM" },
+  { label: 'Сегодня', value: 'DAY' },
+  { label: 'Вчера', value: 'YESTERDAY' },
+  { label: 'Месяц', value: 'MONTH' },
+  { label: 'Все время (макс. 90 дней)', value: 'ALL' },
+  { label: 'Другой период', value: 'CUSTOM' },
 ];
 
 const operationOptions = [
-  { label: "Все", value: "ALL" },
-  { label: "Только пополнения", value: "IN" },
-  { label: "Платежи и переводы в кошельке", value: "OUT" },
-  { label: "Платежи по карта QIWI", value: "QIWI_CARD" },
+  { label: 'Все', value: 'ALL' },
+  { label: 'Только пополнения', value: 'IN' },
+  { label: 'Платежи и переводы в кошельке', value: 'OUT' },
+  { label: 'Платежи по картам QIWI', value: 'QIWI_CARD' },
 ];
 
 const sourcesOptions = [
-  { label: "Рублевый (RUB)", value: "QW_RUB" },
-  { label: "Долларовый (USD)", value: "QW_USD" },
-  { label: "Евро (EUR)", value: "QW_EUR" },
-  { label: "Банковские карты", value: "CARD" },
-  { label: "Баланс телефона", value: "MK" },
+  { label: 'Рублевый (RUB)', value: 'QW_RUB' },
+  { label: 'Долларовый (USD)', value: 'QW_USD' },
+  { label: 'Евро (EUR)', value: 'QW_EUR' },
+  { label: 'Банковские карты', value: 'CARD' },
+  { label: 'Баланс телефона', value: 'MK' },
 ];
 
 export const PaymentsPage = withAuth()(() => {
   const { api } = useContext(PagesContext);
+  const { theme, setTheme } = useThemeContext();
 
   const [data, setData] = useState<PaymentTransactionData[]>([]);
   const [period, setPeriod] = useState<
-    "ALL" | "YESTERDAY" | "DAY" | "MONTH" | "CUSTOM"
-  >("MONTH");
+    'ALL' | 'YESTERDAY' | 'DAY' | 'MONTH' | 'CUSTOM'
+  >('MONTH');
   const [nextTxnDate, setNextTxnDate] = useState<string | undefined>();
   const [nextTxnId, setNextTxnId] = useState<number | undefined>();
   const [incomingTotal, setIncomingTotal] = useState<
-    StatisticsPaymentResponse["incomingTotal"]
+    StatisticsPaymentResponse['incomingTotal']
   >([]);
   const [outgoingTotal, setOutgoingTotal] = useState<
-    StatisticsPaymentResponse["outgoingTotal"]
+    StatisticsPaymentResponse['outgoingTotal']
   >([]);
   const [loading, setLoading] = useState(false);
 
   const [filters, setFilters] = useState<PaymentsFilters>({
     rows: 50,
-    operation: "ALL",
-    sources: ["QW_RUB"],
+    operation: 'ALL',
+    sources: ['QW_RUB'],
     startDate: toUTCISODate(startOfDay(sub(new Date(), { days: 90 }))),
     endDate: toUTCISODate(endOfDay(new Date())),
   });
@@ -89,12 +93,12 @@ export const PaymentsPage = withAuth()(() => {
   const handleSelectSource = useCallback(
     (source: any) => {
       const { sources } = filters;
-      console.log("sources", sources, source);
+      console.log('sources', sources, source);
       if (!sources.includes(source)) {
-        changeFilter("sources", [...sources, source]);
+        changeFilter('sources', [...sources, source]);
       } else {
         changeFilter(
-          "sources",
+          'sources',
           [...sources].filter((src) => src !== source)
         );
       }
@@ -103,36 +107,36 @@ export const PaymentsPage = withAuth()(() => {
   );
 
   useEffect(() => {
-    if (period === "DAY") {
+    if (period === 'DAY') {
       const startDate = startOfDay(new Date());
       const endDate = endOfDay(new Date());
-      changeFilter("startDate", toUTCISODate(startDate));
-      changeFilter("endDate", toUTCISODate(endDate));
-    } else if (period === "YESTERDAY") {
+      changeFilter('startDate', toUTCISODate(startDate));
+      changeFilter('endDate', toUTCISODate(endDate));
+    } else if (period === 'YESTERDAY') {
       const startDate = startOfDay(sub(new Date(), { days: 1 }));
       const endDate = endOfDay(sub(new Date(), { days: 1 }));
-      changeFilter("startDate", toUTCISODate(startDate));
-      changeFilter("endDate", toUTCISODate(endDate));
-    } else if (period === "MONTH") {
+      changeFilter('startDate', toUTCISODate(startDate));
+      changeFilter('endDate', toUTCISODate(endDate));
+    } else if (period === 'MONTH') {
       const startDate = startOfDay(sub(new Date(), { months: 1 }));
       const endDate = endOfDay(new Date());
-      changeFilter("startDate", toUTCISODate(startDate));
-      changeFilter("endDate", toUTCISODate(endDate));
-    } else if (period === "ALL") {
+      changeFilter('startDate', toUTCISODate(startDate));
+      changeFilter('endDate', toUTCISODate(endDate));
+    } else if (period === 'ALL') {
       const startDate = startOfDay(sub(new Date(), { days: 90 }));
       const endDate = endOfDay(new Date());
-      changeFilter("startDate", toUTCISODate(startDate));
-      changeFilter("endDate", toUTCISODate(endDate));
+      changeFilter('startDate', toUTCISODate(startDate));
+      changeFilter('endDate', toUTCISODate(endDate));
     }
   }, [period]);
 
   const handleChangePeriod = useCallback(
     ([dateFrom, dateTo]: DateRange<Date>) => {
       if (dateFrom) {
-        changeFilter("startDate", toUTCISODate(startOfDay(dateFrom)));
+        changeFilter('startDate', toUTCISODate(startOfDay(dateFrom)));
       }
       if (dateTo) {
-        changeFilter("endDate", toUTCISODate(endOfDay(dateTo)));
+        changeFilter('endDate', toUTCISODate(endOfDay(dateTo)));
       }
     },
     []
@@ -161,6 +165,7 @@ export const PaymentsPage = withAuth()(() => {
   };
 
   const fetchStats = async (filters: PaymentsFilters) => {
+    console.log({ filters });
     const { incomingTotal, outgoingTotal } = await api.paymentStats(filters);
     setIncomingTotal(incomingTotal);
     setOutgoingTotal(outgoingTotal);
@@ -180,7 +185,7 @@ export const PaymentsPage = withAuth()(() => {
     [data]
   );
 
-  function renderStatus(status: PaymentTransactionData["status"]) {
+  function renderStatus(status: PaymentTransactionData['status']) {
     return (
       <Badge color={PaymentStatusColors[status] as any}>
         {PaymentStatusTranslates[status]}
@@ -188,8 +193,14 @@ export const PaymentsPage = withAuth()(() => {
     );
   }
 
+  const isLight = theme === 'light';
+
   return (
-    <Pane display="flex" position="relative" backgroundColor="#f5f5f5">
+    <Pane
+      display="flex"
+      position="relative"
+      backgroundColor={isLight ? '#f5f5f5' : '#1B1E1E'}
+    >
       <Pane flexBasis="70%" margin={16}>
         <Pane
           marginBottom={16}
@@ -201,22 +212,24 @@ export const PaymentsPage = withAuth()(() => {
             <Link to="/">
               <Button iconBefore={<ArrowLeftIcon />}>Вернуться</Button>
             </Link>
-            <h2>История</h2>
-            <p>Сумма платежей с начала месяца</p>
+            <Heading is="h2" marginY="16px">
+              История
+            </Heading>
+            <Text>Сумма платежей с начала месяца</Text>
           </div>
           <Pane display="flex" gap="16px">
             <div>
               {incomingTotal.map((cur) => (
-                <p style={{ color: "green" }}>
+                <Text style={{ color: 'green' }}>
                   + {cur.amount} {BalanceCurrenciesTrans[cur.currency]}
-                </p>
+                </Text>
               ))}
             </div>
             <div>
               {outgoingTotal.map((cur) => (
-                <p>
+                <Text>
                   - {cur.amount} {BalanceCurrenciesTrans[cur.currency]}
-                </p>
+                </Text>
               ))}
             </div>
           </Pane>
@@ -251,7 +264,9 @@ export const PaymentsPage = withAuth()(() => {
                 const data = groupedData[date];
                 return (
                   <React.Fragment key={date}>
-                    <h3>{format(new Date(date), "dd MMMM")}</h3>
+                    <Heading is="h3" marginY="8px">
+                      {format(new Date(date), 'dd MMMM')}
+                    </Heading>
                     <Table>
                       <Table.Body>
                         {data.map((txn) => {
@@ -282,18 +297,18 @@ export const PaymentsPage = withAuth()(() => {
                                 {txn.view.title} {txn.view.account}
                               </Table.TextCell>
                               <Table.TextCell>
-                                <span
+                                <Text
                                   style={{
                                     fontSize: 20,
                                     color:
-                                      txn.status === "ERROR"
-                                        ? "#ccc"
-                                        : "inherit",
+                                      txn.status === 'ERROR'
+                                        ? '#ccc'
+                                        : 'inherit',
                                   }}
                                 >
                                   {txn.sum.amount}&nbsp;
                                   {BalanceCurrenciesTrans[txn.sum.currency]}
-                                </span>
+                                </Text>
                               </Table.TextCell>
                             </Table.Row>
                           );
@@ -312,7 +327,7 @@ export const PaymentsPage = withAuth()(() => {
               height={200}
               fontSize={20}
             >
-              <p>За данный период данных нет</p>
+              <Text>За данный период данных нет</Text>
             </Pane>
           )}
         </Pane>
@@ -327,7 +342,7 @@ export const PaymentsPage = withAuth()(() => {
                 selected={period}
                 onChange={(selected) => setPeriod(selected)}
               />
-              {period === "CUSTOM" && (
+              {period === 'CUSTOM' && (
                 <>
                   <StaticDateRangePicker
                     displayStaticWrapperAs="mobile"
@@ -347,7 +362,7 @@ export const PaymentsPage = withAuth()(() => {
                 title="Тип операций"
                 options={operationOptions}
                 selected={filters.operation}
-                onChange={(selected) => changeFilter("operation", selected)}
+                onChange={(selected) => changeFilter('operation', selected)}
               />
               <Menu.Divider />
               <Menu.Group title="Счет">
@@ -361,7 +376,7 @@ export const PaymentsPage = withAuth()(() => {
                     onSelect={() => handleSelectSource(source.value)}
                     key={source.value}
                   >
-                    <p>{source.label}</p>
+                    <Text>{source.label}</Text>
                   </Menu.Option>
                 ))}
               </Menu.Group>
